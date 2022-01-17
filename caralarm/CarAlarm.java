@@ -1,9 +1,14 @@
 // really basic first implementation, still missing flash and sound plus timings
+package caralarm;
 public class CarAlarm {
+    public void test() {
+        System.out.println("Test");
+    }
     public enum State {
         OpenAndUnlocked {
             @Override
             public State getStateAfterLock() {
+                System.out.print("test");
                 return OpenAndLocked;
             }
 
