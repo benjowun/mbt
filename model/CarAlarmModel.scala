@@ -1,7 +1,7 @@
 package modbat
 
-import CarAlarm._
 import modbat.dsl._
+import car.CarAlarm
 
 class ModelTemplate extends Model {
   // precondition with require (condition)

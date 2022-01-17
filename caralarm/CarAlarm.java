@@ -1,3 +1,5 @@
+package car;
+
 // really basic first implementation, still missing flash and sound plus timings
 public class CarAlarm {
     public enum State {
