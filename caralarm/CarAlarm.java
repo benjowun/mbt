@@ -1,10 +1,25 @@
 package caralarm;
 
-// really basic first implementation, still missing flash and sound plus timings
+import java.util.ArrayList;
+
+// Current State: Requirement 3, 
+// TODO: finish doors and Pincode
+// TODO: add wait call if state not changed?
+// TODO: rules for luggage
 public class CarAlarm {
-    public void test() {
-        System.out.println("Test");
+    // for requirement 6 + 7
+    class Door {
+        public int number;
+        public boolean isOpen;
+        public boolean isLuggage;
+        //public boolean isBonnet; //TODO
+        public Door(int number, boolean isLuggage) {
+            this.number = number;
+            this.isLuggage = isLuggage;
+            this.isOpen = true; // NOTE: currently each door is open at start
+        }
     }
+
     public enum State {
         OpenAndUnlocked {
             @Override
@@ -266,25 +281,77 @@ public class CarAlarm {
         public abstract int getWaitTime();
     }
 
+//------------------------------------------------------------------------------------
+    private ArrayList<Door> doors;
+    private State currentState;
+    private int waitCounter;
+
     private boolean isNewState(State newState) {
         return newState == this.currentState;
     }
 
-    public CarAlarm() {
-        this.currentState = State.OpenAndUnlocked;
+    private Door getDoor(int door) {
+        for (Door d : this.doors) {
+            if (d.number == door)
+                return d;
+        }
+        
+        System.out.println("Error: invalid door."); //TODO: throw error
+        return null;
     }
 
-    public void Open() {
-        if (isNewState(this.currentState.getStateAfterOpen())) {
+    private boolean allDoorsClosed() {
+        boolean closed = true;
+        for (Door door : doors) {
+            if (door.isOpen)
+                closed = false;
+        }
+        return closed;
+    }
+
+    public CarAlarm() {
+        this.currentState = State.OpenAndUnlocked;
+        this.doors = new ArrayList<>();
+
+        Door door1 = new Door(1, false);
+        Door door2 = new Door(2, false);
+        Door door3 = new Door(3, false);
+        Door door4 = new Door(4, false);
+        Door doorLuggage = new Door(5, true);
+        // Door doorBonnet = new Door(6, false); // TODO
+        doors.add(door1);
+        doors.add(door2);
+        doors.add(door3);
+        doors.add(door4);
+        doors.add(doorLuggage);
+        //doors.add(door6);
+    }
+
+    // TODO: remove
+    public void test() {
+        System.out.println("Test");
+    }
+
+    public void Open(int door) {
+        Door carDoor = getDoor(door);
+        carDoor.isOpen = true;
+
+        if (isNewState(this.currentState.getStateAfterOpen())) { // if a single door is open, we consider it open for now
             this.currentState = this.currentState.getStateAfterOpen();
             waitCounter = 0;
         }
     }
 
-    public void Close() {
-        if (isNewState(this.currentState.getStateAfterClose())) {
-            this.currentState = this.currentState.getStateAfterClose();
-            waitCounter = 0;
+    public void Close(int door) {
+        Door carDoor = getDoor(door);
+        if (carDoor.isOpen == true) 
+            carDoor.isOpen = false;
+
+        if (allDoorsClosed()) {
+            if (isNewState(this.currentState.getStateAfterClose())) {
+                this.currentState = this.currentState.getStateAfterClose();
+                waitCounter = 0;
+            }
         }
     }
 
@@ -295,14 +362,15 @@ public class CarAlarm {
         }
     }
 
-    public void Unlock() {
+    public void Unlock(int door) {
         if (isNewState(this.currentState.getStateAfterUnlock())) {
             this.currentState = this.currentState.getStateAfterUnlock();
             waitCounter = 0;
         }
     }
 
-    public void Wait() {
+    // waits one second
+    public void Wait() { 
         waitCounter++;
         if (this.currentState.getWaitTime() != 0 && waitCounter >= this.currentState.getWaitTime()) {
             this.currentState = this.currentState.getStateAfterWait();
@@ -317,7 +385,4 @@ public class CarAlarm {
     public int getWaitCounter() {
         return this.waitCounter;
     }
-
-    private State currentState;
-    private int waitCounter;
 }
