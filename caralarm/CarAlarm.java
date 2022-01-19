@@ -1,6 +1,6 @@
 package caralarm;
 
-// really basic first implementation, still missing flash and sound plus timings
+// basic first implementation, still missing flash and sound plus timings
 public class CarAlarm {
     public void test() {
         System.out.println("Test");
@@ -8,122 +8,51 @@ public class CarAlarm {
     public enum State {
         OpenAndUnlocked {
             @Override
-            public State getStateAfterLock() {
-                System.out.print("test");
+            public State lock() {
                 return OpenAndLocked;
             }
 
             @Override
-            public State getStateAfterUnlock() {
-                return OpenAndUnlocked;
-            }
-
-            @Override
-            public State getStateAfterClose() {
+            public State close() {
                 return ClosedAndUnlocked;
-            }
-
-            @Override
-            public State getStateAfterOpen() {
-                return OpenAndUnlocked;
-            }
-
-            @Override
-            public State getStateAfterWait() {
-                return OpenAndUnlocked;
-            }
-
-            @Override
-            public int getWaitTime() {
-                return 0;
             }
         },     
         
         ClosedAndUnlocked {
             @Override
-            public State getStateAfterLock() {
+            public State lock() {
                 return ClosedAndLocked;
             }
 
             @Override
-            public State getStateAfterUnlock() {
-                return ClosedAndUnlocked;
-            }
-
-            @Override
-            public State getStateAfterClose() {
-                return ClosedAndUnlocked;
-            }
-
-            @Override
-            public State getStateAfterOpen() {
+            public State open() {
                 return OpenAndUnlocked;
-            }
-
-            @Override
-            public State getStateAfterWait() {
-                return ClosedAndUnlocked;
-            }
-
-            @Override
-            public int getWaitTime() {
-                return 0;
             }
         }, 
         OpenAndLocked {
             @Override
-            public State getStateAfterLock() {
-                return OpenAndLocked;
-            }
-
-            @Override
-            public State getStateAfterUnlock() {
+            public State unlock() {
                 return OpenAndUnlocked;
             }
 
             @Override
-            public State getStateAfterClose() {
+            public State close() {
                 return ClosedAndLocked;
-            }
-
-            @Override
-            public State getStateAfterOpen() {
-                return OpenAndLocked;
-            }
-
-            @Override
-            public State getStateAfterWait() {
-                return OpenAndLocked;
-            }
-
-            @Override
-            public int getWaitTime() {
-                return 0;
             }
         }, 
         ClosedAndLocked {
             @Override
-            public State getStateAfterLock() {
-                return ClosedAndLocked;
-            }
-
-            @Override
-            public State getStateAfterUnlock() {
+            public State unlock() {
                 return ClosedAndUnlocked;
             }
 
             @Override
-            public State getStateAfterClose() {
-                return ClosedAndLocked;
-            }
-
-            @Override
-            public State getStateAfterOpen() {
+            public State open() {
                 return OpenAndLocked;
             }
 
             @Override
-            public State getStateAfterWait() {
+            public State waitSecond() {
                 return Armed;
             }
 
@@ -134,58 +63,23 @@ public class CarAlarm {
         }, 
         Armed {
             @Override
-            public State getStateAfterLock() {
-                return Armed;
-            }
-
-            @Override
-            public State getStateAfterUnlock() {
+            public State unlock() {
                 return ClosedAndUnlocked;
             }
 
             @Override
-            public State getStateAfterClose() {
-                return Armed;
-            }
-
-            @Override
-            public State getStateAfterOpen() {
+            public State open() {
                 return Alarm;
-            }
-
-            @Override
-            public State getStateAfterWait() {
-                return Armed;
-            }
-
-            @Override
-            public int getWaitTime() {
-                return 0;
             }
         }, 
         Alarm {
             @Override
-            public State getStateAfterLock() {
-                return Armed;
-            }
-
-            @Override
-            public State getStateAfterUnlock() {
+            public State unlock() {
                 return OpenAndUnlocked;
             }
 
             @Override
-            public State getStateAfterClose() {
-                return Alarm;
-            }
-
-            @Override
-            public State getStateAfterOpen() {
-                return Alarm;
-            }
-
-            @Override
-            public State getStateAfterWait() {
+            public State waitSecond() {
                 return SilentAndFlashing;
             }
 
@@ -196,27 +90,12 @@ public class CarAlarm {
         }, 
         SilentAndFlashing {
             @Override
-            public State getStateAfterLock() {
-                return SilentAndFlashing;
-            }
-
-            @Override
-            public State getStateAfterUnlock() {
+            public State unlock() {
                 return OpenAndUnlocked;
             }
 
             @Override
-            public State getStateAfterClose() {
-                return SilentAndFlashing;
-            }
-
-            @Override
-            public State getStateAfterOpen() {
-                return SilentAndFlashing;
-            }
-
-            @Override
-            public State getStateAfterWait() {
+            public State waitSecond() {
                 return SilentAndOpen;
             }
 
@@ -227,47 +106,27 @@ public class CarAlarm {
         }, 
         SilentAndOpen {
             @Override
-            public State getStateAfterLock() {
-                return SilentAndOpen;
-            }
-
-            @Override
-            public State getStateAfterUnlock() {
+            public State unlock() {
                 return OpenAndUnlocked;
             }
 
             @Override
-            public State getStateAfterClose() {
+            public State close() {
                 return Armed;
-            }
-
-            @Override
-            public State getStateAfterOpen() {
-                return SilentAndOpen;
-            }
-
-            @Override
-            public State getStateAfterWait() {
-                return SilentAndOpen;
-            }
-
-            @Override
-            public int getWaitTime() {
-                return 0;
             }
         };
 
 
-        public abstract State getStateAfterLock();
-        public abstract State getStateAfterUnlock();
-        public abstract State getStateAfterClose();
-        public abstract State getStateAfterOpen();
-        public abstract State getStateAfterWait();
-        public abstract int getWaitTime();
+        public State lock() { return this; }
+        public State unlock() { return this; }
+        public State close() { return this; }
+        public State open() { return this; }
+        public State waitSecond() { return this; }
+        public int getWaitTime() { return 0; }
     }
 
     private boolean isNewState(State newState) {
-        return newState == this.currentState;
+        return newState != this.currentState;
     }
 
     public CarAlarm() {
@@ -275,37 +134,37 @@ public class CarAlarm {
     }
 
     public void Open() {
-        if (isNewState(this.currentState.getStateAfterOpen())) {
-            this.currentState = this.currentState.getStateAfterOpen();
+        if (isNewState(this.currentState.open())) {
+            this.currentState = this.currentState.open();
             waitCounter = 0;
         }
     }
 
     public void Close() {
-        if (isNewState(this.currentState.getStateAfterClose())) {
-            this.currentState = this.currentState.getStateAfterClose();
+        if (isNewState(this.currentState.close())) {
+            this.currentState = this.currentState.close();
             waitCounter = 0;
         }
     }
 
     public void Lock() {
-        if (isNewState(this.currentState.getStateAfterLock())) {
-            this.currentState = this.currentState.getStateAfterLock();
+        if (isNewState(this.currentState.lock())) {
+            this.currentState = this.currentState.lock();
             waitCounter = 0;
         }
     }
 
     public void Unlock() {
-        if (isNewState(this.currentState.getStateAfterUnlock())) {
-            this.currentState = this.currentState.getStateAfterUnlock();
+        if (isNewState(this.currentState.unlock())) {
+            this.currentState = this.currentState.unlock();
             waitCounter = 0;
         }
     }
 
-    public void Wait() {
-        waitCounter++;
+    public void Wait(int seconds) {
+        waitCounter += seconds;
         if (this.currentState.getWaitTime() != 0 && waitCounter >= this.currentState.getWaitTime()) {
-            this.currentState = this.currentState.getStateAfterWait();
+            this.currentState = this.currentState.waitSecond();
             waitCounter = 0;
         }
     }
