@@ -4,10 +4,9 @@ import java.util.ArrayList;
 
 
 
-// Current State: Requirement 6 + Logging, 
-// TODO: finish doors + requirement 7
+// Current State: Requirement 6 + (7) + Logging, 
+// TODO: 7 could be done nicer
 // TODO: add wait call if state not changed?
-// TODO: rules for luggage
 // TODO: PIN code
 public class CarAlarm {
     private static boolean PRINT_DEBUG = true; // set to false to get rid of prints
@@ -16,11 +15,13 @@ public class CarAlarm {
         public int number;
         public boolean isOpen;
         public boolean isLuggage;
+        public boolean isLuggageLocked;
         //public boolean isBonnet; //TODO
         public Door(int number, boolean isLuggage) {
             this.number = number;
             this.isLuggage = isLuggage;
             this.isOpen = true; // NOTE: currently each door is open at start
+            this.isLuggageLocked = false;
         }
     }
 
@@ -216,6 +217,10 @@ public class CarAlarm {
 
         debug();
         if (isNewState(this.currentState.open())) { // if a single door is open, we consider it open for now
+            if (carDoor.isLuggage && !carDoor.isLuggageLocked) {
+                waitCounter = 0;
+                return;
+            }
             log("OPEN", this.currentState.open());
             this.currentState = this.currentState.open();
             waitCounter = 0;
@@ -239,6 +244,8 @@ public class CarAlarm {
 
     public void Lock() {
         debug();
+        getDoor(5).isLuggageLocked = true;
+
         if (isNewState(this.currentState.lock())) {
             log("CLOSE", this.currentState.lock());
             this.currentState = this.currentState.lock();
@@ -248,7 +255,13 @@ public class CarAlarm {
 
     public void Unlock(int door) {
         debug();
-        if (isNewState(this.currentState.unlock())) {
+        Door carDoor = getDoor(door);
+
+        if (carDoor.isLuggage) { // do not activate alarm state, just allow access to luggage.
+            carDoor.isLuggageLocked = false;
+            waitCounter = 0;
+            return;
+        } else if (isNewState(this.currentState.unlock())) {
             log("CLOSE", this.currentState.unlock());
             this.currentState = this.currentState.unlock();
             waitCounter = 0;
@@ -256,9 +269,9 @@ public class CarAlarm {
     }
 
     // waits one second
-    public void Wait() { 
+    public void Wait(int seconds) { 
         debug();
-        waitCounter++;
+        waitCounter += seconds;
         if (this.currentState.getWaitTime() != 0 && waitCounter >= this.currentState.getWaitTime()) {
             log("CLOSE", this.currentState.waitSecond());
             this.currentState = this.currentState.waitSecond();
