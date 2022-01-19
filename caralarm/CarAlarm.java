@@ -27,51 +27,51 @@ public class CarAlarm {
     public enum State {
         OpenAndUnlocked {
             @Override
-            public State getStateAfterLock() {
+            public State lock() {
                 return OpenAndLocked;
             }
 
             @Override
-            public State getStateAfterClose() {
+            public State close() {
                 return ClosedAndUnlocked;
             }
         },     
         
         ClosedAndUnlocked {
             @Override
-            public State getStateAfterLock() {
+            public State lock() {
                 return ClosedAndLocked;
             }
 
             @Override
-            public State getStateAfterOpen() {
+            public State open() {
                 return OpenAndUnlocked;
             }
         }, 
         OpenAndLocked {
             @Override
-            public State getStateAfterUnlock() {
+            public State unlock() {
                 return OpenAndUnlocked;
             }
 
             @Override
-            public State getStateAfterClose() {
+            public State close() {
                 return ClosedAndLocked;
             }
         }, 
         ClosedAndLocked {
             @Override
-            public State getStateAfterUnlock() {
+            public State unlock() {
                 return ClosedAndUnlocked;
             }
 
             @Override
-            public State getStateAfterOpen() {
+            public State open() {
                 return OpenAndLocked;
             }
 
             @Override
-            public State getStateAfterWait() {
+            public State waitSecond() {
                 return Armed;
             }
 
@@ -82,23 +82,23 @@ public class CarAlarm {
         }, 
         Armed {
             @Override
-            public State getStateAfterUnlock() {
+            public State unlock() {
                 return ClosedAndUnlocked;
             }
 
             @Override
-            public State getStateAfterOpen() {
+            public State open() {
                 return Alarm;
             }
         }, 
         Alarm {
             @Override
-            public State getStateAfterUnlock() {
+            public State unlock() {
                 return OpenAndUnlocked;
             }
 
             @Override
-            public State getStateAfterWait() {
+            public State waitSecond() {
                 return SilentAndFlashing;
             }
 
@@ -109,12 +109,12 @@ public class CarAlarm {
         }, 
         SilentAndFlashing {
             @Override
-            public State getStateAfterUnlock() {
+            public State unlock() {
                 return OpenAndUnlocked;
             }
 
             @Override
-            public State getStateAfterWait() {
+            public State waitSecond() {
                 return SilentAndOpen;
             }
 
@@ -125,22 +125,22 @@ public class CarAlarm {
         }, 
         SilentAndOpen {
             @Override
-            public State getStateAfterUnlock() {
+            public State unlock() {
                 return OpenAndUnlocked;
             }
 
             @Override
-            public State getStateAfterClose() {
+            public State close() {
                 return Armed;
             }
         };
 
 
-        public State getStateAfterLock() { return this; }
-        public State getStateAfterUnlock() { return this; }
-        public State getStateAfterClose() { return this; }
-        public State getStateAfterOpen() { return this; }
-        public State getStateAfterWait() { return this; }
+        public State lock() { return this; }
+        public State unlock() { return this; }
+        public State close() { return this; }
+        public State open() { return this; }
+        public State waitSecond() { return this; }
         public int getWaitTime() { return 0; }
     }
 
@@ -215,9 +215,9 @@ public class CarAlarm {
         carDoor.isOpen = true;
 
         debug();
-        if (isNewState(this.currentState.getStateAfterOpen())) { // if a single door is open, we consider it open for now
-            log("OPEN", this.currentState.getStateAfterOpen());
-            this.currentState = this.currentState.getStateAfterOpen();
+        if (isNewState(this.currentState.open())) { // if a single door is open, we consider it open for now
+            log("OPEN", this.currentState.open());
+            this.currentState = this.currentState.open();
             waitCounter = 0;
         }
     }
@@ -229,9 +229,9 @@ public class CarAlarm {
 
         debug();
         if (allDoorsClosed()) {
-            if (isNewState(this.currentState.getStateAfterClose())) {
-                log("CLOSE", this.currentState.getStateAfterClose());
-                this.currentState = this.currentState.getStateAfterClose();
+            if (isNewState(this.currentState.close())) {
+                log("CLOSE", this.currentState.close());
+                this.currentState = this.currentState.close();
                 waitCounter = 0;
             }
         }
@@ -239,18 +239,18 @@ public class CarAlarm {
 
     public void Lock() {
         debug();
-        if (isNewState(this.currentState.getStateAfterLock())) {
-            log("CLOSE", this.currentState.getStateAfterLock());
-            this.currentState = this.currentState.getStateAfterLock();
+        if (isNewState(this.currentState.lock())) {
+            log("CLOSE", this.currentState.lock());
+            this.currentState = this.currentState.lock();
             waitCounter = 0;
         }
     }
 
     public void Unlock(int door) {
         debug();
-        if (isNewState(this.currentState.getStateAfterUnlock())) {
-            log("CLOSE", this.currentState.getStateAfterUnlock());
-            this.currentState = this.currentState.getStateAfterUnlock();
+        if (isNewState(this.currentState.unlock())) {
+            log("CLOSE", this.currentState.unlock());
+            this.currentState = this.currentState.unlock();
             waitCounter = 0;
         }
     }
@@ -260,8 +260,8 @@ public class CarAlarm {
         debug();
         waitCounter++;
         if (this.currentState.getWaitTime() != 0 && waitCounter >= this.currentState.getWaitTime()) {
-            log("CLOSE", this.currentState.getStateAfterWait());
-            this.currentState = this.currentState.getStateAfterWait();
+            log("CLOSE", this.currentState.waitSecond());
+            this.currentState = this.currentState.waitSecond();
             waitCounter = 0;
         }
     }
