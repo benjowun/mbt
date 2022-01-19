@@ -2,12 +2,16 @@ package caralarm;
 
 import java.util.ArrayList;
 
-// Current State: Requirement 3, 
-// TODO: finish doors and Pincode
+
+
+// Current State: Requirement 6 + Logging, 
+// TODO: finish doors + requirement 7
 // TODO: add wait call if state not changed?
 // TODO: rules for luggage
+// TODO: PIN code
 public class CarAlarm {
-    // for requirement 6 + 7
+    private static boolean PRINT_DEBUG = true; // set to false to get rid of prints
+
     class Door {
         public int number;
         public boolean isOpen;
@@ -24,33 +28,12 @@ public class CarAlarm {
         OpenAndUnlocked {
             @Override
             public State getStateAfterLock() {
-                System.out.print("test");
                 return OpenAndLocked;
-            }
-
-            @Override
-            public State getStateAfterUnlock() {
-                return OpenAndUnlocked;
             }
 
             @Override
             public State getStateAfterClose() {
                 return ClosedAndUnlocked;
-            }
-
-            @Override
-            public State getStateAfterOpen() {
-                return OpenAndUnlocked;
-            }
-
-            @Override
-            public State getStateAfterWait() {
-                return OpenAndUnlocked;
-            }
-
-            @Override
-            public int getWaitTime() {
-                return 0;
             }
         },     
         
@@ -61,37 +44,12 @@ public class CarAlarm {
             }
 
             @Override
-            public State getStateAfterUnlock() {
-                return ClosedAndUnlocked;
-            }
-
-            @Override
-            public State getStateAfterClose() {
-                return ClosedAndUnlocked;
-            }
-
-            @Override
             public State getStateAfterOpen() {
                 return OpenAndUnlocked;
-            }
-
-            @Override
-            public State getStateAfterWait() {
-                return ClosedAndUnlocked;
-            }
-
-            @Override
-            public int getWaitTime() {
-                return 0;
             }
         }, 
         OpenAndLocked {
             @Override
-            public State getStateAfterLock() {
-                return OpenAndLocked;
-            }
-
-            @Override
             public State getStateAfterUnlock() {
                 return OpenAndUnlocked;
             }
@@ -100,36 +58,11 @@ public class CarAlarm {
             public State getStateAfterClose() {
                 return ClosedAndLocked;
             }
-
-            @Override
-            public State getStateAfterOpen() {
-                return OpenAndLocked;
-            }
-
-            @Override
-            public State getStateAfterWait() {
-                return OpenAndLocked;
-            }
-
-            @Override
-            public int getWaitTime() {
-                return 0;
-            }
         }, 
         ClosedAndLocked {
             @Override
-            public State getStateAfterLock() {
-                return ClosedAndLocked;
-            }
-
-            @Override
             public State getStateAfterUnlock() {
                 return ClosedAndUnlocked;
-            }
-
-            @Override
-            public State getStateAfterClose() {
-                return ClosedAndLocked;
             }
 
             @Override
@@ -149,54 +82,19 @@ public class CarAlarm {
         }, 
         Armed {
             @Override
-            public State getStateAfterLock() {
-                return Armed;
-            }
-
-            @Override
             public State getStateAfterUnlock() {
                 return ClosedAndUnlocked;
             }
 
             @Override
-            public State getStateAfterClose() {
-                return Armed;
-            }
-
-            @Override
             public State getStateAfterOpen() {
                 return Alarm;
-            }
-
-            @Override
-            public State getStateAfterWait() {
-                return Armed;
-            }
-
-            @Override
-            public int getWaitTime() {
-                return 0;
             }
         }, 
         Alarm {
             @Override
-            public State getStateAfterLock() {
-                return Armed;
-            }
-
-            @Override
             public State getStateAfterUnlock() {
                 return OpenAndUnlocked;
-            }
-
-            @Override
-            public State getStateAfterClose() {
-                return Alarm;
-            }
-
-            @Override
-            public State getStateAfterOpen() {
-                return Alarm;
             }
 
             @Override
@@ -211,23 +109,8 @@ public class CarAlarm {
         }, 
         SilentAndFlashing {
             @Override
-            public State getStateAfterLock() {
-                return SilentAndFlashing;
-            }
-
-            @Override
             public State getStateAfterUnlock() {
                 return OpenAndUnlocked;
-            }
-
-            @Override
-            public State getStateAfterClose() {
-                return SilentAndFlashing;
-            }
-
-            @Override
-            public State getStateAfterOpen() {
-                return SilentAndFlashing;
             }
 
             @Override
@@ -242,11 +125,6 @@ public class CarAlarm {
         }, 
         SilentAndOpen {
             @Override
-            public State getStateAfterLock() {
-                return SilentAndOpen;
-            }
-
-            @Override
             public State getStateAfterUnlock() {
                 return OpenAndUnlocked;
             }
@@ -255,30 +133,15 @@ public class CarAlarm {
             public State getStateAfterClose() {
                 return Armed;
             }
-
-            @Override
-            public State getStateAfterOpen() {
-                return SilentAndOpen;
-            }
-
-            @Override
-            public State getStateAfterWait() {
-                return SilentAndOpen;
-            }
-
-            @Override
-            public int getWaitTime() {
-                return 0;
-            }
         };
 
 
-        public abstract State getStateAfterLock();
-        public abstract State getStateAfterUnlock();
-        public abstract State getStateAfterClose();
-        public abstract State getStateAfterOpen();
-        public abstract State getStateAfterWait();
-        public abstract int getWaitTime();
+        public State getStateAfterLock() { return this; }
+        public State getStateAfterUnlock() { return this; }
+        public State getStateAfterClose() { return this; }
+        public State getStateAfterOpen() { return this; }
+        public State getStateAfterWait() { return this; }
+        public int getWaitTime() { return 0; }
     }
 
 //------------------------------------------------------------------------------------
@@ -287,7 +150,7 @@ public class CarAlarm {
     private int waitCounter;
 
     private boolean isNewState(State newState) {
-        return newState == this.currentState;
+        return newState != this.currentState;
     }
 
     private Door getDoor(int door) {
@@ -307,6 +170,21 @@ public class CarAlarm {
                 closed = false;
         }
         return closed;
+    }
+
+    private void log(String action, State nextState) {
+        if (PRINT_DEBUG)
+            System.out.println("Moving from state: |" + this.currentState + "|  -->  " + action + "  |" + nextState + "|\n");
+    }
+
+    private void debug() {
+        if (PRINT_DEBUG) {
+            System.out.println("Current State: " + this.currentState);
+            for (Door d : this.doors) {
+                System.out.println("Door: " + d.number + " Open: " + d.isOpen);
+            }
+            System.out.println("All doors closed: " + allDoorsClosed() + "\n");
+        }
     }
 
     public CarAlarm() {
@@ -336,7 +214,9 @@ public class CarAlarm {
         Door carDoor = getDoor(door);
         carDoor.isOpen = true;
 
+        debug();
         if (isNewState(this.currentState.getStateAfterOpen())) { // if a single door is open, we consider it open for now
+            log("OPEN", this.currentState.getStateAfterOpen());
             this.currentState = this.currentState.getStateAfterOpen();
             waitCounter = 0;
         }
@@ -347,8 +227,10 @@ public class CarAlarm {
         if (carDoor.isOpen == true) 
             carDoor.isOpen = false;
 
+        debug();
         if (allDoorsClosed()) {
             if (isNewState(this.currentState.getStateAfterClose())) {
+                log("CLOSE", this.currentState.getStateAfterClose());
                 this.currentState = this.currentState.getStateAfterClose();
                 waitCounter = 0;
             }
@@ -356,14 +238,18 @@ public class CarAlarm {
     }
 
     public void Lock() {
+        debug();
         if (isNewState(this.currentState.getStateAfterLock())) {
+            log("CLOSE", this.currentState.getStateAfterLock());
             this.currentState = this.currentState.getStateAfterLock();
             waitCounter = 0;
         }
     }
 
     public void Unlock(int door) {
+        debug();
         if (isNewState(this.currentState.getStateAfterUnlock())) {
+            log("CLOSE", this.currentState.getStateAfterUnlock());
             this.currentState = this.currentState.getStateAfterUnlock();
             waitCounter = 0;
         }
@@ -371,8 +257,10 @@ public class CarAlarm {
 
     // waits one second
     public void Wait() { 
+        debug();
         waitCounter++;
         if (this.currentState.getWaitTime() != 0 && waitCounter >= this.currentState.getWaitTime()) {
+            log("CLOSE", this.currentState.getStateAfterWait());
             this.currentState = this.currentState.getStateAfterWait();
             waitCounter = 0;
         }
