@@ -209,6 +209,7 @@ public class CarAlarm {
     private State currentState;
     private int waitCounter;
     private PIN pincode;
+    public int DEFAULT_PINCODE = 1234;
 
 
     private boolean isNewState(State newState) {
@@ -252,7 +253,7 @@ public class CarAlarm {
     public CarAlarm() {
         this.currentState = State.OpenAndUnlocked;
         this.doors = new ArrayList<>();
-        this.pincode = new PIN(1234); // set to default value, can be set
+        this.pincode = new PIN(DEFAULT_PINCODE); // set to default value, can be set
 
         Door door1 = new Door(1, false);
         Door door2 = new Door(2, false);
