@@ -1,0 +1,6 @@
+General thoughts:
+Lots of redundancy, no easy way to generalize transitions from many states to one or from one state to many. Trace log is easy to read if labels are defined for transitions.
+
+Bug in setPinCode: Setting new pin did not work, resulting in unlocking failing.
+
+Bug in Wait / Alarm: Calling Wait(300) in Alarm moves to the SilentAndFlashing state, not SilentAndOpen.

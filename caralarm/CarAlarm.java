@@ -69,13 +69,15 @@ public class CarAlarm {
         }
 
         // car must be unlocked
-        public boolean setPIN(int pin) {
-            if (!isValidPIN(pin)) {
+        public boolean setPIN(int old_pin, int new_pin) {
+            System.out.println(String.format("Trying to change pin from %d to %d with the old_pin %d. " +
+                    "Pin errors: %d", pincode, new_pin, old_pin, errorCount));
+            if (!isValidPIN(new_pin)) {
                 lastMessage = Message.InvalidPin;
                 this.errorCount++;
                 return false;
-            } else if (matchesPIN(pin)) {
-                this.pincode = pin;
+            } else if (matchesPIN(old_pin)) {
+                this.pincode = new_pin;
                 this.errorCount = 0;
                 lastMessage = Message.NewPinSet;
                 return true;
@@ -181,7 +183,7 @@ public class CarAlarm {
 
             @Override
             public int getWaitTime() {
-                return 300;
+                return 270;
             }
         }, 
         SilentAndOpen {
@@ -329,12 +331,15 @@ public class CarAlarm {
     // unlocks all doors
     // @param: key - 4 digit pincode, TODO: throw error on invalid code
     public void PinUnlock(int code) {
+        System.out.println("Called pinunlock with pin " + code + ", correct is " + getCurrentPin());
         debug();
         if (pincode.matchesPIN(code)) {
             if (isNewState(this.currentState.unlock())) {
                 log("PINUNLOCK", this.currentState.unlock());
                 this.currentState = this.currentState.unlock();
                 waitCounter = 0;
+            } else {
+                System.out.println("Right pin, but did not change state");
             }
         } else if (pincode.errorCount >= 3) { // only reset errors on correct PIN!
             if (currentState == State.Armed) {
@@ -342,7 +347,11 @@ public class CarAlarm {
                 log("PINUNLOCK", State.Alarm);
                 this.currentState = State.Alarm;
                 waitCounter = 0;
-            } // else do nothing
+            } else {
+                System.out.println("Wrong pin for 3rd time, but not in armed");
+            }
+        } else {
+            System.out.println("Wrong pin, but not for 3rd time");
         }
     }
 
@@ -351,8 +360,8 @@ public class CarAlarm {
     // TODO: this introduces a whole bunch of weird new states we still have to think through
     public void SetPinCode(int codeOld, int codeNew) {
         debug();
-        if (this.currentState == State.OpenAndUnlocked) { // assumed Car must be open to set PIN as it is probably through internal display
-            pincode.setPIN(codeNew); 
+        if (this.currentState == State.OpenAndUnlocked || this.currentState == State.OpenAndLocked) { // assumed Car must be open to set PIN as it is probably through internal display
+            pincode.setPIN(codeOld, codeNew);
 
             if (pincode.errorCount >= 3) { // only reset errors on correct PIN!
                 // trigger alarm
@@ -371,8 +380,13 @@ public class CarAlarm {
         waitCounter += seconds;
         if (this.currentState.getWaitTime() != 0 && waitCounter >= this.currentState.getWaitTime()) {
             log("WAIT", this.currentState.waitSecond());
+            int leftover_wait_time = waitCounter - this.currentState.getWaitTime();
+            System.out.println(String.format("Waiting for %d seconds, which is %d more than the wait time " +
+                    "of the current state. After this, Wait will be called again with the leftover %d seconds.",
+                    seconds, this.currentState.getWaitTime(), leftover_wait_time));
             this.currentState = this.currentState.waitSecond();
             waitCounter = 0;
+            Wait(leftover_wait_time);
         }
     }
 
