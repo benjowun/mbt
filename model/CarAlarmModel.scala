@@ -11,7 +11,7 @@ class CarAlarmModel extends Model {
   // maybe (doSomething)
 
   val sut = new CarAlarm() // SUT
-  val num_doors = 5
+  val num_doors = 4
   val closed = 0
   val open = 1
   // internal tracking of door state

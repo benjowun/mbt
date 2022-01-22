@@ -3,7 +3,6 @@ package caralarm;
 import java.util.ArrayList;
 
 
-
 // Current State: Requirement 1-3, 6+7, 4, TOPDO 5
 // TODO: add wait call if state not changed?
 // TODO: messanging system --> show last message?
@@ -21,14 +20,48 @@ public class CarAlarm {
     class Door {
         public int number;
         public boolean isOpen;
-        public boolean isLuggage;
-        public boolean isLuggageLocked;
-        //public boolean isBonnet; //TODO
-        public Door(int number, boolean isLuggage) {
+
+        public boolean isCarDoor() {
+            return number <= 4;
+        }
+
+        public Door(int number) {
             this.number = number;
-            this.isLuggage = isLuggage;
             this.isOpen = true; // NOTE: currently each door is open at start
-            this.isLuggageLocked = false;
+        }
+
+        public void open() {
+            this.isOpen = true;
+        }
+
+        public void close() {
+            this.isOpen = false;
+        }
+    }
+
+    class LuggageDoor extends Door {
+        public boolean isLocked;
+
+        public LuggageDoor(int number) {
+            super(number);
+            isLocked = false;
+        }
+
+        public void open() {
+            if (!isLocked) {
+                isOpen = true;
+            } else {
+                System.out.println("Tried to open luggage door, but it is locked");
+            }
+        }
+
+        public void lock() {
+            isLocked = true;
+        }
+
+        // logic for pin is in unlockLuggage
+        public void unlock() {
+            isLocked = false;
         }
     }
 
@@ -98,8 +131,8 @@ public class CarAlarm {
             public State close() {
                 return ClosedAndUnlocked;
             }
-        },     
-        
+        },
+
         ClosedAndUnlocked {
             @Override
             public State lock() {
@@ -110,7 +143,7 @@ public class CarAlarm {
             public State open() {
                 return OpenAndUnlocked;
             }
-        }, 
+        },
         OpenAndLocked {
             @Override
             public State unlock() {
@@ -121,7 +154,7 @@ public class CarAlarm {
             public State close() {
                 return ClosedAndLocked;
             }
-        }, 
+        },
         ClosedAndLocked {
             @Override
             public State unlock() {
@@ -142,7 +175,7 @@ public class CarAlarm {
             public int getWaitTime() {
                 return 20;
             }
-        }, 
+        },
         Armed {
             @Override
             public State unlock() {
@@ -153,7 +186,7 @@ public class CarAlarm {
             public State open() {
                 return Alarm;
             }
-        }, 
+        },
         Alarm {
             @Override
             public State unlock() {
@@ -169,7 +202,7 @@ public class CarAlarm {
             public int getWaitTime() {
                 return 30;
             }
-        }, 
+        },
         SilentAndFlashing {
             @Override
             public State unlock() {
@@ -185,7 +218,7 @@ public class CarAlarm {
             public int getWaitTime() {
                 return 270;
             }
-        }, 
+        },
         SilentAndOpen {
             @Override
             public State unlock() {
@@ -198,15 +231,32 @@ public class CarAlarm {
             }
         };
 
-        public State lock() { return this; }
-        public State unlock() { return this; }
-        public State close() { return this; }
-        public State open() { return this; }
-        public State waitSecond() { return this; }
-        public int getWaitTime() { return 0; }
+        public State lock() {
+            return this;
+        }
+
+        public State unlock() {
+            return this;
+        }
+
+        public State close() {
+            return this;
+        }
+
+        public State open() {
+            return this;
+        }
+
+        public State waitSecond() {
+            return this;
+        }
+
+        public int getWaitTime() {
+            return 0;
+        }
     }
 
-//------------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------------
     private ArrayList<Door> doors;
     private State currentState;
     private int waitCounter;
@@ -223,15 +273,37 @@ public class CarAlarm {
             if (d.number == door)
                 return d;
         }
-        
+
         lastMessage = Message.InvalidDoor;
         return null;
+    }
+
+    public void lockLuggage() {
+        LuggageDoor luggageDoor = (LuggageDoor) getDoor(5);
+        luggageDoor.lock();
+    }
+
+    public void unlockLuggage(int pin) {
+        debug();
+        LuggageDoor luggageDoor = (LuggageDoor) getDoor(5);
+        if (pincode.matchesPIN(pin)) {
+            System.out.println("Unlocking luggage door, pincode matches");
+            luggageDoor.unlock();
+        } else {
+            System.out.println("Tried to unlock luggage door with wrong pin code " + pin);
+            if (currentState == State.Armed) {
+                // trigger alarm
+                log("UNLOCKLUGGAGE", State.Alarm);
+                this.currentState = State.Alarm;
+                waitCounter = 0;
+            }
+        }
     }
 
     private boolean allDoorsClosed() {
         boolean closed = true;
         for (Door door : doors) {
-            if (door.isOpen)
+            if (door.isOpen && door.isCarDoor())
                 closed = false;
         }
         return closed;
@@ -257,41 +329,34 @@ public class CarAlarm {
         this.doors = new ArrayList<>();
         this.pincode = new PIN(DEFAULT_PINCODE); // set to default value, can be set
 
-        Door door1 = new Door(1, false);
-        Door door2 = new Door(2, false);
-        Door door3 = new Door(3, false);
-        Door door4 = new Door(4, false);
-        Door doorLuggage = new Door(5, true);
-        // Door doorBonnet = new Door(6, false); // TODO
-        doors.add(door1);
-        doors.add(door2);
-        doors.add(door3);
-        doors.add(door4);
-        doors.add(doorLuggage);
-        //doors.add(door6);
+        doors.add(new Door(1));
+        doors.add(new Door(2));
+        doors.add(new Door(3));
+        doors.add(new Door(4));
+        doors.add(new LuggageDoor(5));
+        doors.add(new Door(6));
     }
 
-    public void Open(int door) {
-        Door carDoor = getDoor(door);
-        carDoor.isOpen = true;
+    public void Open(int door_num) {
+        Door door = getDoor(door_num);
+        assert door != null;
+        door.open();
 
         debug();
-        if (isNewState(this.currentState.open())) { // if a single door is open, we consider it open for now
-            if (carDoor.isLuggage && !carDoor.isLuggageLocked) {
-                waitCounter = 0;
-                return;
-            }
+        if (door.isCarDoor() && isNewState(this.currentState.open())) { // if a single door is open, we consider it open for now
             log("OPEN", this.currentState.open());
             this.currentState = this.currentState.open();
             waitCounter = 0;
         }
     }
 
-    public void Close(int door) {
-        Door carDoor = getDoor(door);
-        if (carDoor.isOpen == true && this.currentState != State.Alarm) // closing door that triggered alarm impossible
-            carDoor.isOpen = false;
-
+    public void Close(int door_num) {
+        Door door = getDoor(door_num);
+        assert door != null;
+        if (this.currentState != State.Alarm) // closing door that triggered alarm impossible
+        {
+            door.close();
+        }
         debug();
         if (allDoorsClosed()) {
             if (isNewState(this.currentState.close())) {
@@ -304,7 +369,8 @@ public class CarAlarm {
 
     public void Lock() {
         debug();
-        getDoor(5).isLuggageLocked = true;
+        LuggageDoor luggageDoor = (LuggageDoor) getDoor(5);
+        luggageDoor.lock();
 
         if (isNewState(this.currentState.lock())) {
             log("LOCK", this.currentState.lock());
@@ -313,15 +379,9 @@ public class CarAlarm {
         }
     }
 
-    public void Unlock(int door) {
+    public void Unlock() {
         debug();
-        Door carDoor = getDoor(door);
-
-        if (carDoor.isLuggage) { // do not activate alarm state, just allow access to luggage.
-            carDoor.isLuggageLocked = false;
-            waitCounter = 0;
-            return;
-        } else if (isNewState(this.currentState.unlock())) {
+        if (isNewState(this.currentState.unlock())) {
             log("UNLOCK", this.currentState.unlock());
             this.currentState = this.currentState.unlock();
             waitCounter = 0;
@@ -375,14 +435,14 @@ public class CarAlarm {
     }
 
     // waits one second
-    public void Wait(int seconds) { 
+    public void Wait(int seconds) {
         debug();
         waitCounter += seconds;
         if (this.currentState.getWaitTime() != 0 && waitCounter >= this.currentState.getWaitTime()) {
             log("WAIT", this.currentState.waitSecond());
             int leftover_wait_time = waitCounter - this.currentState.getWaitTime();
             System.out.println(String.format("Waiting for %d seconds, which is %d more than the wait time " +
-                    "of the current state. After this, Wait will be called again with the leftover %d seconds.",
+                            "of the current state. After this, Wait will be called again with the leftover %d seconds.",
                     seconds, this.currentState.getWaitTime(), leftover_wait_time));
             this.currentState = this.currentState.waitSecond();
             waitCounter = 0;
