@@ -49,7 +49,7 @@ public class CarAlarm {
         }
 
         public boolean open() {
-            if (!isOpen)
+            if (isOpen)
                 return true;;
             if (!isLocked) {
                 isOpen = true;
@@ -93,7 +93,7 @@ public class CarAlarm {
         }
 
         public boolean matchesPIN(int pin) {
-            if (!isValidPIN(pin)) {
+            if (isValidPIN(pin)) {
                 lastMessage = Message.InvalidPin;
                 this.errorCount++;
                 return false;

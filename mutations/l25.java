@@ -22,7 +22,7 @@ public class CarAlarm {
         public boolean isOpen;
 
         public boolean isCarDoor() {
-            return number <= 4;
+            return number < 4;
         }
 
         public Door(int number) {
@@ -49,7 +49,7 @@ public class CarAlarm {
         }
 
         public boolean open() {
-            if (!isOpen)
+            if (isOpen)
                 return true;;
             if (!isLocked) {
                 isOpen = true;

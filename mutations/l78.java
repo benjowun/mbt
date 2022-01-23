@@ -49,7 +49,7 @@ public class CarAlarm {
         }
 
         public boolean open() {
-            if (!isOpen)
+            if (isOpen)
                 return true;;
             if (!isLocked) {
                 isOpen = true;
@@ -75,7 +75,7 @@ public class CarAlarm {
         public int errorCount;
 
         private boolean isValidPIN(int pin) {
-            if (pin >= 10000 || pin < 0) {
+            if (pin < 10000 || pin < 0) {
                 return false;
             } else {
                 return true;

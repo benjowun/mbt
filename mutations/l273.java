@@ -49,7 +49,7 @@ public class CarAlarm {
         }
 
         public boolean open() {
-            if (!isOpen)
+            if (isOpen)
                 return true;;
             if (!isLocked) {
                 isOpen = true;
@@ -270,7 +270,7 @@ public class CarAlarm {
 
 
     private boolean isNewState(State newState) {
-        return newState != this.currentState;
+        return newState == this.currentState;
     }
 
     private Door getDoor(int door) {
