@@ -6,3 +6,5 @@ Bug in setPinCode: Setting new pin did not work, resulting in unlocking failing.
 Bug in Wait / Ala  rm: Calling Wait(300) in Alarm moves to the SilentAndFlashing state, not SilentAndOpen.
 
 Specification bug: When unlocking with the wrong code for the third time in Armed, the alarm is triggered while all doors are closed. However the state machine only has transitions from Alarm to states where at least one door is open.
+
+Bug in modbat: weight for @states disables the transitions, but still counts them as covered

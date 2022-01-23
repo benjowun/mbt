@@ -108,8 +108,6 @@ public class CarAlarm {
 
         // car must be unlocked
         public boolean setPIN(int old_pin, int new_pin) {
-            System.out.println(String.format("Trying to change pin from %d to %d with the old_pin %d. " +
-                    "Pin errors: %d", pincode, new_pin, old_pin, errorCount));
             if (!isValidPIN(new_pin)) {
                 lastMessage = Message.InvalidPin;
                 this.errorCount++;
@@ -283,11 +281,6 @@ public class CarAlarm {
         return null;
     }
 
-    public void lockLuggage() {
-        LuggageDoor luggageDoor = (LuggageDoor) getDoor(5);
-        luggageDoor.lock();
-    }
-
     public void unlockLuggage(int pin) {
         debug();
         LuggageDoor luggageDoor = (LuggageDoor) getDoor(5);
@@ -343,12 +336,13 @@ public class CarAlarm {
     }
 
     public void Open(int door_num) {
+        System.out.println("Opening door " + door_num);
         Door door = getDoor(door_num);
         assert door != null;
         boolean noAlarm = door.open();
 
         debug();
-        if ((door.isCarDoor() && isNewState(this.currentState.open())) || !noAlarm) { // if a single door is open, we consider it open for now
+        if ((door.isCarDoor() && isNewState(this.currentState.open())) || (!noAlarm && this.currentState == State.Armed)) { // if a single door is open, we consider it open for now
             log("OPEN", this.currentState.open());
             this.currentState = this.currentState.open();
             waitCounter = 0;
@@ -386,6 +380,8 @@ public class CarAlarm {
 
     public void Unlock() {
         debug();
+        LuggageDoor luggageDoor = (LuggageDoor) getDoor(5);
+        luggageDoor.unlock();
         if (isNewState(this.currentState.unlock())) {
             log("UNLOCK", this.currentState.unlock());
             this.currentState = this.currentState.unlock();

@@ -18,7 +18,7 @@ class CarAlarmModel extends Model {
   val closed = 0
   val open = 1
   // internal tracking of door state
-  val doors: Array[Int] = Array.fill(num_doors)(open)
+  val doors: Array[Int] = Array.fill(num_doors+1)(open)
   var time_in_closedandlocked = 0
   var time_in_alarm = 0
   var pin: Int = sut.DEFAULT_PINCODE
@@ -27,13 +27,20 @@ class CarAlarmModel extends Model {
 
   def unlockCorrectPin(): Unit = {
     sut.PinUnlock(pin)
+    luggage_locked = 0
     wrong_pin_count = 0
   }
 
   def unlockWrongPin(): Unit = {
     val wrong_pin = -1
-    require(wrong_pin != pin)
     sut.PinUnlock(wrong_pin)
+    wrong_pin_count += 1
+  }
+
+  def unlockLuggageWrongPin(): Unit = {
+    val wrong_pin = -1
+    require(wrong_pin != pin)
+    sut.unlockLuggage(wrong_pin)
     wrong_pin_count += 1
   }
 
@@ -209,15 +216,16 @@ class CarAlarmModel extends Model {
   def UnlockLuggage(): Unit = {
     val old_state = sut.getCurrentState
     luggage_locked = 0
+    wrong_pin_count = 0
     sut.unlockLuggage(pin)
     assert(sut.getCurrentState == old_state)
-  } weight 2
+  }
 
   // can always open an unlocked luggage, or close a luggage. Should not affect state
   @States(Array("OpenAndUnlocked", "ClosedAndUnlocked", "ClosedAndLocked", "Armed", "OpenAndLocked", "Alarm", "Flash", "SilentAndOpen"))
   def OpenUnlockedLuggage(): Unit = {
     val old_state = sut.getCurrentState
-    val new_door_state = if (choose(0, 5) == 0) open else closed
+    val new_door_state = if (choose(0, 4) == 0) open else closed
 
     if (new_door_state == open) {
       require(luggage_locked == 0)
@@ -228,7 +236,7 @@ class CarAlarmModel extends Model {
       doors(luggage_door_number-1) = new_door_state
     }
     assert(sut.getCurrentState == old_state)
-  } weight 2
+  }
 
   // Unlocking with wrong pin in ClosedAndLocked and OpenAndLocked should do nothing if
   // it is the first or second time
@@ -237,10 +245,12 @@ class CarAlarmModel extends Model {
   def doWrongUnlock(): Unit = {
     val old_state = sut.getCurrentState
     require(wrong_pin_count < 2)
-    unlockWrongPin()
+    val unlock_target = choose(0, 2)
+    if (unlock_target == 0) unlockWrongPin()
+    else if (unlock_target == 1) unlockLuggageWrongPin()
     assert(sut.getCurrentState == old_state)
     assert(sut.getPinErrorCount == wrong_pin_count)
-  } weight 5
+  }
 
   // Since we can enter the Alarm state from doing an incorrect pin change, and in the alarm state
   // the doors are implicitly open, it is safe to assume that we can only change the pin in the
@@ -292,17 +302,47 @@ class CarAlarmModel extends Model {
   } label "Change pin wrong for 3rd time in OpenAndLocked"
 
 
-  // Alarm goes off when opening in Armed
+  // Alarm goes off when opening car door in Armed
   "Armed" -> "Alarm"  := {
     assert(sut.getCurrentState == Armed)
     val door_index = choose(0, num_doors)
     val door_number = door_index + 1
-    if (door_number == luggage_door_number) require(luggage_locked == 1) // alarm only triggers if luggage is locked when opened
     sut.Open(door_number)
     doors(door_index) = open
     time_in_alarm = 0
     assert(sut.getCurrentState == Alarm)
   } label "Open random door in Armed"
+
+  // Alarm goes off when opening locked luggage door in Armed
+  "Armed" -> "Alarm" := {
+    assert(sut.getCurrentState == Armed)
+    require(luggage_locked == 1 && doors(luggage_door_number-1) == closed)
+    sut.Open(luggage_door_number)
+    assert(sut.getCurrentState == Alarm)
+    // if triggering alarm by opening luggage, open random door to comply with specification
+    val door_index = choose(0, num_doors)
+    val door_number = door_index + 1
+    sut.Open(door_number)
+    doors(door_index) = open
+    assert(sut.getCurrentState == Alarm)
+  } label "Open locked luggage door in Armed"
+
+  // Alarm goes off when unlocking with wrong pin for 3rd time in Armed, which requires a door to be open?
+  "Armed" -> "Alarm" := {
+    assert(sut.getCurrentState == Armed)
+    require(wrong_pin_count >= 2)
+    val unlock_target = choose(0, 2)
+    if (unlock_target == 0) unlockWrongPin()
+    else if (unlock_target == 1) unlockLuggageWrongPin()
+    time_in_alarm = 0
+    assert(sut.getCurrentState == Alarm)
+    // open random door to comply with specification
+    val door_index = choose(0, num_doors)
+    val door_number = door_index + 1
+    sut.Open(door_number)
+    doors(door_index) = open
+    assert(sut.getCurrentState == Alarm)
+  } weight 5
 
   // Alarm can be turned off by unlocking
   "Alarm" -> "OpenAndUnlocked" := {
