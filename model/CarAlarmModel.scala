@@ -12,8 +12,8 @@ class CarAlarmModel extends Model {
   // TODO: LockLuggage() test?
 
   val sut = new CarAlarm() // SUT
-  val num_doors = 5
-  val num_doors_without_luggage = 4
+
+  val num_doors = 4
   val luggage_door_number = 5
   val closed = 0
   val open = 1
@@ -57,7 +57,7 @@ class CarAlarmModel extends Model {
   // Only closes the door if the car would still be open after the action.
   "OpenAndUnlocked" -> "OpenAndUnlocked" := {
     assert(sut.getCurrentState == OpenAndUnlocked)
-    val door_index = choose(0, num_doors_without_luggage)
+    val door_index = choose(0, num_doors)
     val door_number = door_index + 1
     // 1 in 4 chance to open the door, 3 in 4 in chance to close it
     val new_door_state = if (choose(0, 5) == 0) open else closed
@@ -68,7 +68,7 @@ class CarAlarmModel extends Model {
     else {
       // make sure that at least one other door would still be open, otherwise we would be in ClosedAndUnlocked
       var car_still_open = false
-      for (i <- 0 until num_doors_without_luggage) {
+      for (i <- 0 until num_doors) {
         if (doors(i) == open && i != door_index) {
           car_still_open = true
         }
@@ -84,9 +84,9 @@ class CarAlarmModel extends Model {
   // If there is exactly one open door, close it and enter ClosedAndUnlocked state.
   "OpenAndUnlocked" -> "ClosedAndUnlocked" := {
     assert(sut.getCurrentState == OpenAndUnlocked)
-    var num_open_doors = num_doors_without_luggage
+    var num_open_doors = num_doors
     var last_open_door_index = -1
-    for (i <- 0 until num_doors_without_luggage) {
+    for (i <- 0 until num_doors) {
       if (doors(i) == closed) num_open_doors -= 1
       else last_open_door_index = i
     }
@@ -112,7 +112,7 @@ class CarAlarmModel extends Model {
   // Opening any door (appart frorm luggage) advances from ClosedAndUnlocked to OpenAndUnlocked
   "ClosedAndUnlocked" -> "OpenAndUnlocked" := {
     assert(sut.getCurrentState == ClosedAndUnlocked)
-    val door_index = choose(0, num_doors_without_luggage)
+    val door_index = choose(0, num_doors)
     val door_number = door_index + 1
     sut.Open(door_number)
     doors(door_index) = open
@@ -122,9 +122,9 @@ class CarAlarmModel extends Model {
   // Same as OpenAndUnlocked -> ClosedAndUnlocked, also reset the arming timer
   "OpenAndLocked" -> "ClosedAndLocked" := {
     assert(sut.getCurrentState == OpenAndLocked)
-    var num_open_doors = num_doors_without_luggage
+    var num_open_doors = num_doors
     var last_open_door_index = -1
-    for (i <- 0 until num_doors_without_luggage) {
+    for (i <- 0 until num_doors) {
       if (doors(i) == closed) num_open_doors -= 1
       else last_open_door_index = i
     }
@@ -173,7 +173,7 @@ class CarAlarmModel extends Model {
   // Opening any door advances to OpenAndLocked, same as ClosedAndUnlocked -> OpenAndUnlocked
   "ClosedAndLocked" -> "OpenAndLocked" := {
     assert(sut.getCurrentState == ClosedAndLocked)
-    val door_index = choose(0, num_doors_without_luggage)
+    val door_index = choose(0, num_doors)
     val door_number = door_index + 1
     sut.Open(door_number)
     doors(door_index) = open
@@ -209,7 +209,7 @@ class CarAlarmModel extends Model {
   def UnlockLuggage(): Unit = {
     val old_state = sut.getCurrentState
     luggage_locked = 0
-    sut.UnlockLuggage()
+    sut.unlockLuggage(pin)
     assert(sut.getCurrentState == old_state)
   } weight 2
 
@@ -362,9 +362,9 @@ class CarAlarmModel extends Model {
   // If there is only one door open in SilentAndOpen, we can close it to return to Armed
   "SilentAndOpen" -> "Armed" := {
     assert(sut.getCurrentState == SilentAndOpen)
-    var num_open_doors = num_doors_without_luggage
+    var num_open_doors = num_doors
     var last_open_door_index = -1
-    for (i <- 0 until num_doors_without_luggage) {
+    for (i <- 0 until num_doors) {
       if (doors(i) == closed) num_open_doors -= 1
       else last_open_door_index = i
     }
@@ -382,7 +382,7 @@ class CarAlarmModel extends Model {
   // Same as OpenAndUnlocked -> OpenAndUnlocked
   "SilentAndOpen" -> "SilentAndOpen" := {
     assert(sut.getCurrentState == SilentAndOpen)
-    val door_index = choose(0, num_doors_without_luggage)
+    val door_index = choose(0, num_doors)
     val door_number = door_index + 1
     // 1 in 4 chance to open the door, 3 in 4 in chance to close it
     val new_door_state = if (choose(0, 5) == 0) open else closed
@@ -393,7 +393,7 @@ class CarAlarmModel extends Model {
     else {
       // make sure that at least one other door would still be open, otherwise we would be in ClosedAndUnlocked
       var car_still_open = false
-      for (i <- 0 until num_doors_without_luggage) {
+      for (i <- 0 until num_doors) {
         if (doors(i) == open && i != door_index) {
           car_still_open = true
         }
